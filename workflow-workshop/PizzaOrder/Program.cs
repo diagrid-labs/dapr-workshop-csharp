@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Dapr.Client;
 using PizzaOrder.Models;
 using PizzaOrder.Services;
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IOrderStateService, OrderStateService>();
+builder.Services.AddDaprClient();
 
 var app = builder.Build();
 

@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using PizzaStorefront.Services;
 using PizzaStorefront.Models;
+using Dapr.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IStorefrontService, StorefrontService>();
+builder.Services.AddDaprClient();
 
 var app = builder.Build();
 

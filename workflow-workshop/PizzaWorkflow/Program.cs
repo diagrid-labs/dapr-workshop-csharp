@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Dapr.Client;
 using Dapr.Workflow;
 using PizzaWorkflow.Activities;
 using PizzaWorkflow.Models;
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDaprClient();
 
 builder.Services.AddDaprWorkflow(options =>
 {

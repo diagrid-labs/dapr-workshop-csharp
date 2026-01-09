@@ -1,7 +1,6 @@
 using PizzaKitchen.Models;
 using Dapr.Client;
 
-
 namespace PizzaKitchen.Services;
 
 public interface ICookService

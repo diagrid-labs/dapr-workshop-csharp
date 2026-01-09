@@ -1,5 +1,5 @@
-using PizzaDelivery.Models;
 using Dapr.Client;
+using PizzaDelivery.Models;
 
 namespace PizzaDelivery.Services;
 

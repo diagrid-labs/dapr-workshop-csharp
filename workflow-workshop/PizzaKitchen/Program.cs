@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using PizzaKitchen.Models;
 using PizzaKitchen.Services;
+using Dapr.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<ICookService, CookService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDaprClient();
 
 var app = builder.Build();
 
