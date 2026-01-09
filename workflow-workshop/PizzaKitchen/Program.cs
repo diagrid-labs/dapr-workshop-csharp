@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Mvc;
+using PizzaKitchen.Models;
 using PizzaKitchen.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers().AddDapr();
 builder.Services.AddSingleton<ICookService, CookService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -15,5 +16,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapControllers();
+app.MapPost("/cook", async (
+    Order order,
+    ILogger<Program> logger,
+    [FromServices]ICookService cookService) =>
+{
+    logger.LogInformation("Starting cooking for order: {OrderId}", order.OrderId);
+    var result = await cookService.CookPizzaAsync(order);
+    return Results.Ok(result);
+});
+
 app.Run();
