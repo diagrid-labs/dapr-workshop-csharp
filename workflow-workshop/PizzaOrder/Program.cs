@@ -21,7 +21,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPost("/order", async (
-    Order order,
+    [FromBody] Order order,
     ILogger<Program> logger,
     [FromServices]IOrderStateService orderStateService) =>
 {
@@ -59,7 +59,7 @@ app.MapDelete("/order/{orderId}", async (
 
 
 app.MapPost("/order-sub", async (
-    Order order,
+    [FromBody] Order order,
     ILogger<Program> logger,
     [FromServices]IOrderStateService orderStateService) =>
 {

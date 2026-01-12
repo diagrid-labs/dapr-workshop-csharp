@@ -32,7 +32,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPost("/workflow/start-order", async (
-    Order order,
+    [FromBody] Order order,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
@@ -61,7 +61,7 @@ app.MapPost("/workflow/start-order", async (
 });
 
 app.MapGet("/workflow/get-status", async (
-    ManageWorkflowRequest request,
+    [FromBody] ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
@@ -86,7 +86,7 @@ app.MapGet("/workflow/get-status", async (
 });
 
 app.MapPost("/workflow/validate-pizza", async (
-    ValidationRequest request,
+    [FromBody] ValidationRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
@@ -114,7 +114,7 @@ app.MapPost("/workflow/validate-pizza", async (
 });
 
 app.MapPost("/workflow/pause-order", async (
-    ManageWorkflowRequest request,
+    [FromBody] ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
@@ -139,7 +139,7 @@ app.MapPost("/workflow/pause-order", async (
 });
 
 app.MapPost("/workflow/resume-order", async (
-    ManageWorkflowRequest request,
+    [FromBody] ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
@@ -164,7 +164,7 @@ app.MapPost("/workflow/resume-order", async (
 });
 
 app.MapPost("/workflow/cancel-order", async (
-    ManageWorkflowRequest request,
+    [FromBody] ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {

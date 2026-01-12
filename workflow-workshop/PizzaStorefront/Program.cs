@@ -19,7 +19,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPost("/storefront/order", async (
-    Order order,
+    [FromBody] Order order,
     ILogger<Program> logger,
     [FromServices]IStorefrontService storefrontService) =>
 {

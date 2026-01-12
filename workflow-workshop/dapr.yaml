@@ -24,3 +24,8 @@ apps:
     appPort: 8004
     daprHTTPPort: 3504
     command: ["dotnet", "run"]
+  - appDirPath: ./PizzaWorkflow/
+    appID: pizza-workflow
+    appPort: 8005
+    daprHTTPPort: 3505
+    command: ["dotnet", "run"]

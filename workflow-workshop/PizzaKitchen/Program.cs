@@ -19,7 +19,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPost("/cook", async (
-    Order order,
+    [FromBody] Order order,
     ILogger<Program> logger,
     [FromServices]ICookService cookService) =>
 {
