@@ -18,7 +18,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/order", async (
+app.MapPost("/storefront/order", async (
     Order order,
     ILogger<Program> logger,
     [FromServices]IStorefrontService storefrontService) =>

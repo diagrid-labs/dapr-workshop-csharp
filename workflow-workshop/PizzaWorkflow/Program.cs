@@ -31,7 +31,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/start-order", async (
+app.MapPost("/workflow/start-order", async (
     Order order,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
@@ -60,32 +60,32 @@ app.MapPost("/start-order", async (
     }
 });
 
-app.MapGet("/status/{orderId}", async (
-    string orderId,
+app.MapGet("/workflow/get-status", async (
+    ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
-    var instanceId = $"pizza-order-{orderId}";
+    var instanceId = $"pizza-order-{request.OrderId}";
         
     try
     {
-        logger.LogInformation("Getting workflow status for order {orderId}", orderId);
+        logger.LogInformation("Getting workflow status for order {OrderId}", request.OrderId);
         var status = await daprWorkflowClient.GetWorkflowStateAsync(instanceId);
-        logger.LogInformation("Workflow status retrieved successfully for order {orderId}", orderId);
+        logger.LogInformation("Workflow status retrieved successfully for order {request.OrderId}", request.OrderId);
         return Results.Ok(new
         {
-            order_id = orderId,
+            order_id = request.OrderId,
             status
         });
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Failed to get workflow status for order {orderId}", orderId);
+        logger.LogError(ex, "Failed to get workflow status for order {OrderId}", request.OrderId);
         throw;
     }
 });
 
-app.MapPost("/validate-pizza", async (
+app.MapPost("/workflow/validate-pizza", async (
     ValidationRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
@@ -113,77 +113,77 @@ app.MapPost("/validate-pizza", async (
     }
 });
 
-app.MapPost("/pause-order/{orderId}", async (
-    string orderId,
+app.MapPost("/workflow/pause-order", async (
+    ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
-    var instanceId = $"pizza-order-{orderId}";
+    var instanceId = $"pizza-order-{request.OrderId}";
         
     try
     {
-        logger.LogInformation("Pausing workflow for order {orderId}", orderId);
+        logger.LogInformation("Pausing workflow for order {OrderId}", request.OrderId);
         await daprWorkflowClient.SuspendWorkflowAsync(instanceId);
-        logger.LogInformation("Workflow paused successfully for order {orderId}", orderId);
+        logger.LogInformation("Workflow paused successfully for order {OrderId}", request.OrderId);
         return Results.Ok(new
         {
-            order_id = orderId,
+            order_id = request.OrderId,
             status = "paused"
         });
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Failed to pause workflow for order {orderId}", orderId);
+        logger.LogError(ex, "Failed to pause workflow for order {orderId}", request.OrderId);
         throw;
     }
 });
 
-app.MapPost("/resume-order/{orderId}", async (
-    string orderId,
+app.MapPost("/workflow/resume-order", async (
+    ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
-    var instanceId = $"pizza-order-{orderId}";
+    var instanceId = $"pizza-order-{request.OrderId}";
         
     try
     {
-        logger.LogInformation("Resuming workflow for order {orderId}", orderId);
+        logger.LogInformation("Resuming workflow for order {OrderId}", request.OrderId);
         await daprWorkflowClient.ResumeWorkflowAsync(instanceId);
-        logger.LogInformation("Workflow resumed successfully for order {orderId}", orderId);
+        logger.LogInformation("Workflow resumed successfully for order {OrderId}", request.OrderId);
         return Results.Ok(new
         {
-            order_id = orderId,
+            order_id = request.OrderId,
             status = "resumed"
         });
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Failed to resume workflow for order {orderId}", orderId);
+        logger.LogError(ex, "Failed to resume workflow for order {OrderId}", request.OrderId);
         throw;
     }
 });
 
-app.MapPost("/cancel-order/{orderId}", async (
-    string orderId,
+app.MapPost("/workflow/cancel-order", async (
+    ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
 {
-    var instanceId = $"pizza-order-{orderId}";
+    var instanceId = $"pizza-order-{request.OrderId}";
         
     try
     {
-        logger.LogInformation("Cancelling workflow for order {orderId}", orderId);
+        logger.LogInformation("Cancelling workflow for order {OrderId}", request.OrderId);
         await daprWorkflowClient.TerminateWorkflowAsync(instanceId);
-        logger.LogInformation("Workflow cancelled successfully for order {orderId}", orderId);
+        logger.LogInformation("Workflow cancelled successfully for order {OrderId}", request.OrderId);
         return Results.Ok(new
         {
-            order_id = orderId,
+            order_id = request.OrderId,
             status = "terminated"
         });
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Failed to cancel workflow for order {orderId}", orderId);
+        logger.LogError(ex, "Failed to cancel workflow for order {OrderId}", request.OrderId);
         throw;
     }
 });
