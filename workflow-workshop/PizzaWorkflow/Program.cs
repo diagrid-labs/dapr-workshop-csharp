@@ -60,7 +60,7 @@ app.MapPost("/workflow/start-order", async (
     }
 });
 
-app.MapGet("/workflow/get-status", async (
+app.MapPost("/workflow/get-status", async (
     [FromBody] ManageWorkflowRequest request,
     ILogger<Program> logger,
     [FromServices] DaprWorkflowClient daprWorkflowClient) =>
