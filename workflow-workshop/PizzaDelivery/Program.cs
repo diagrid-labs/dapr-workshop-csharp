@@ -1,14 +1,29 @@
-using Microsoft.AspNetCore.Mvc;
-using Dapr.Client;
-using PizzaDelivery.Models;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
+using PizzaDelivery;
 using PizzaDelivery.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDaprClient();
 builder.Services.AddSingleton<IDeliveryService, DeliveryService>();
+
+builder.Services.Configure<JsonOptions>((options) =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+});
+
+builder.Services.AddDaprClient((daprBuilder) =>
+{
+    daprBuilder.UseJsonSerializationOptions(new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    });
+});
 
 var app = builder.Build();
 
@@ -18,15 +33,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/delivery", async (
-    [FromBody] Order order,
-    ILogger<Program> logger,
-    [FromServices]IDeliveryService deliveryService) =>
-{
-    logger.LogInformation("Starting delivery for order: {OrderId}", order.OrderId);
-    var result = await deliveryService.DeliverPizzaAsync(order);
-    return Results.Ok(result);
-});
-
+app.MapDefaultEndpoints();
+app.MapServiceEndpoints();
 app.Run();
 

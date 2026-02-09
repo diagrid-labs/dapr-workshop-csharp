@@ -1,14 +1,29 @@
-using Microsoft.AspNetCore.Mvc;
-using PizzaKitchen.Models;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
+using PizzaKitchen;
 using PizzaKitchen.Services;
-using Dapr.Client;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.AddSingleton<ICookService, CookService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDaprClient();
+
+builder.Services.Configure<JsonOptions>((options) =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+});
+
+builder.Services.AddDaprClient((daprBuilder) =>
+{
+    daprBuilder.UseJsonSerializationOptions(new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    });
+});
 
 var app = builder.Build();
 
@@ -18,14 +33,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/cook", async (
-    [FromBody] Order order,
-    ILogger<Program> logger,
-    [FromServices]ICookService cookService) =>
-{
-    logger.LogInformation("Starting cooking for order: {OrderId}", order.OrderId);
-    var result = await cookService.CookPizzaAsync(order);
-    return Results.Ok(result);
-});
-
+app.MapDefaultEndpoints();
+app.MapServiceEndpoints();
 app.Run();

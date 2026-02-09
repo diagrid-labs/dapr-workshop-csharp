@@ -1,15 +1,30 @@
-using Microsoft.AspNetCore.Mvc;
-using Dapr.Client;
-using Dapr.AspNetCore;
-using PizzaOrder.Models;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
+using PizzaOrder;
 using PizzaOrder.Services;
+using Dapr.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IOrderStateService, OrderStateService>();
-builder.Services.AddDaprClient();
+
+builder.Services.Configure<JsonOptions>((options) =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+});
+
+builder.Services.AddDaprClient((daprBuilder) =>
+{
+    daprBuilder.UseJsonSerializationOptions(new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    });
+});
 
 var app = builder.Build();
 app.UseCloudEvents();
@@ -20,54 +35,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/order", async (
-    [FromBody] Order order,
-    ILogger<Program> logger,
-    [FromServices]IOrderStateService orderStateService) =>
-{
-    logger.LogInformation("Received new order: {OrderId}", order.OrderId);
-    var result = await orderStateService.UpdateOrderStateAsync(order);
-    return Results.Ok(result);
-});
-
-app.MapGet("/order/{orderId}", async (
-    string orderId,
-    [FromServices]IOrderStateService orderStateService) =>
-{
-    var order = await orderStateService.GetOrderAsync(orderId);
-    if (order == null)
-    {
-        return Results.NotFound();
-    }
-    return Results.Ok(order);
-});
-
-
-app.MapDelete("/order/{orderId}", async (
-    string orderId,
-    [FromServices]IOrderStateService orderStateService) =>
-{
-    var order = await orderStateService.GetOrderAsync(orderId);
-    if (order == null)
-    {
-        return Results.NotFound();
-    }
-
-    await orderStateService.DeleteOrderAsync(orderId);
-    return Results.Ok(orderId);
-});
-
-
-app.MapPost("/order-sub", async (
-    [FromBody] Order order,
-    ILogger<Program> logger,
-    [FromServices]IOrderStateService orderStateService) =>
-{
-    logger.LogInformation("Received order update for order {OrderId}",
-            order.OrderId);
-    var result = await orderStateService.UpdateOrderStateAsync(order);
-    return Results.Ok();
-});
-
-
+// Enable Dapr pub/sub subscription endpoint discovery
+app.MapSubscribeHandler();
+app.MapDefaultEndpoints();
+app.MapServiceEndpoints();
 app.Run();

@@ -1,14 +1,29 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
+using PizzaStorefront;
 using PizzaStorefront.Services;
-using PizzaStorefront.Models;
-using Dapr.Client;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IStorefrontService, StorefrontService>();
-builder.Services.AddDaprClient();
+
+builder.Services.Configure<JsonOptions>((options) =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+});
+
+builder.Services.AddDaprClient((daprBuilder) =>
+{
+    daprBuilder.UseJsonSerializationOptions(new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    });
+});
 
 var app = builder.Build();
 
@@ -18,14 +33,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapPost("/storefront/order", async (
-    [FromBody] Order order,
-    ILogger<Program> logger,
-    [FromServices]IStorefrontService storefrontService) =>
-{
-    logger.LogInformation("Received new order: {OrderId}", order.OrderId);
-    var result = await storefrontService.ProcessOrderAsync(order);
-    return Results.Ok(result);
-});
-
+app.MapDefaultEndpoints();
+app.MapServiceEndpoints();
 app.Run();

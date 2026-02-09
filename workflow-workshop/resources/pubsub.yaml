@@ -7,9 +7,9 @@ spec:
   version: v1
   metadata:
   - name: redisHost
-    value: localhost:6379
+    value: "localhost:16379"
   - name: redisPassword
-    value: ""
+    value: "zxczxc123"
 scopes:
 - pizza-storefront
 - pizza-kitchen

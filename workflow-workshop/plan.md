@@ -46,14 +46,13 @@ Create a new Aspire AppHost project to orchestrate all services.
 **File:** `AppHost/AppHost.csproj`
 
 ```xml
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Aspire.AppHost.Sdk/13.0.0">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IsAspireHost>true</IsAspireHost>
   </PropertyGroup>
 
   <ItemGroup>
@@ -148,7 +147,6 @@ Create a shared ServiceDefaults project for common Aspire configuration.
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IsAspireSharedProject>true</IsAspireSharedProject>
   </PropertyGroup>
 
   <ItemGroup>
