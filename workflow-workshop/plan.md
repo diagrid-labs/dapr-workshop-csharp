@@ -18,7 +18,7 @@ This plan outlines the steps to migrate the `workflow-workshop` .NET application
 ### Current Dapr Components
 - **State Store**: Redis (`pizzastatestore`) - used by pizza-workflow and pizza-order
 - **Pub/Sub**: Redis (`pizzapubsub`) - used by storefront, kitchen, delivery, order
-- **Subscription**: Topic `orders` routed to `/orders-sub`
+- **Subscription**: Topic `orders` routed to `/order-sub`
 
 ### Current Technology Stack
 - .NET 10.0
@@ -59,7 +59,7 @@ Create a new Aspire AppHost project to orchestrate all services.
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.0.0" />
-    <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.Valkey" Version="13.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -76,29 +76,29 @@ Create a new Aspire AppHost project to orchestrate all services.
 **File:** `AppHost/Program.cs`
 
 ```csharp
+using System.Collections.Immutable;
 using CommunityToolkit.Aspire.Hosting.Dapr;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Add Redis for Dapr state store and pub/sub
-var redis = builder.AddRedis("redis");
+// Add Valkey (Redis-compatible) for Dapr state store and pub/sub
+var storagePassword = builder.AddParameter("storage-password", "zxczxc123", secret: true);
+var storage = builder
+    .AddValkey("storage", 16379, storagePassword)
+    .WithContainerName("redis-state-store")
+    .WithDataVolume("redis-state-store-data");
 
 // Define Dapr components path
 var resourcesPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "resources");
 
-// Configure Dapr sidecar options with components path
-var daprOptions = new DaprSidecarOptions
-{
-    ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
-};
-
-// Add services with Dapr sidecars
+// Add services with Dapr sidecars - all services wait for storage to be ready
 var pizzaOrder = builder.AddProject<Projects.PizzaOrder>("pizza-order")
     .WithDaprSidecar(new DaprSidecarOptions
     {
         AppId = "pizza-order",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
+pizzaOrder.WaitFor(storage);
 
 var pizzaStorefront = builder.AddProject<Projects.PizzaStorefront>("pizza-storefront")
     .WithDaprSidecar(new DaprSidecarOptions
@@ -106,6 +106,7 @@ var pizzaStorefront = builder.AddProject<Projects.PizzaStorefront>("pizza-storef
         AppId = "pizza-storefront",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
+pizzaStorefront.WaitFor(storage);
 
 var pizzaKitchen = builder.AddProject<Projects.PizzaKitchen>("pizza-kitchen")
     .WithDaprSidecar(new DaprSidecarOptions
@@ -113,6 +114,7 @@ var pizzaKitchen = builder.AddProject<Projects.PizzaKitchen>("pizza-kitchen")
         AppId = "pizza-kitchen",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
+pizzaKitchen.WaitFor(storage);
 
 var pizzaDelivery = builder.AddProject<Projects.PizzaDelivery>("pizza-delivery")
     .WithDaprSidecar(new DaprSidecarOptions
@@ -120,6 +122,7 @@ var pizzaDelivery = builder.AddProject<Projects.PizzaDelivery>("pizza-delivery")
         AppId = "pizza-delivery",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
+pizzaDelivery.WaitFor(storage);
 
 var pizzaWorkflow = builder.AddProject<Projects.PizzaWorkflow>("pizza-workflow")
     .WithDaprSidecar(new DaprSidecarOptions
@@ -127,6 +130,7 @@ var pizzaWorkflow = builder.AddProject<Projects.PizzaWorkflow>("pizza-workflow")
         AppId = "pizza-workflow",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
+pizzaWorkflow.WaitFor(storage);
 
 builder.Build().Run();
 ```
@@ -305,6 +309,7 @@ public static class EndpointExtensions
 
 #### PizzaOrder/EndpointExtensions.cs
 ```csharp
+using Dapr;
 using Microsoft.AspNetCore.Mvc;
 using PizzaOrder.Models;
 using PizzaOrder.Services;
@@ -351,7 +356,8 @@ public static class EndpointExtensions
             return Results.Ok(orderId);
         });
 
-        app.MapPost("/order-sub", async (
+        // Programmatic Dapr pub/sub subscription using Topic attribute
+        app.MapPost("/order-sub", [Topic("pizzapubsub", "orders")] async (
             [FromBody] Order order,
             ILogger<Program> logger,
             [FromServices] IOrderStateService orderStateService) =>
@@ -680,6 +686,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Enable Dapr pub/sub subscription endpoint discovery
+app.MapSubscribeHandler();
 app.MapDefaultEndpoints();
 app.MapServiceEndpoints();
 app.Run();
@@ -841,11 +849,11 @@ EndProject
 
 ---
 
-## Phase 4: Update Dapr Component Files (Optional)
+## Phase 4: Update Dapr Component Files (Required)
 
-The existing Dapr component files in `resources/` can remain as-is since they're compatible with the Aspire-Dapr integration. However, you may optionally update the Redis host to use Aspire's service discovery:
+The Dapr component files in `resources/` must be updated to use the Valkey storage container managed by Aspire on port 16379.
 
-### 4.1 Update statestore.yaml (Optional)
+### 4.1 Update statestore.yaml (Required)
 ```yaml
 apiVersion: dapr.io/v1alpha1
 kind: Component
@@ -856,9 +864,9 @@ spec:
   version: v1
   metadata:
   - name: redisHost
-    value: "{redis.bindings.tcp.host}:{redis.bindings.tcp.port}"
+    value: "localhost:16379"
   - name: redisPassword
-    value: ""
+    value: "zxczxc123"
   - name: actorStateStore
     value: "true"
 scopes:
@@ -866,7 +874,7 @@ scopes:
 - pizza-order
 ```
 
-### 4.2 Update pubsub.yaml (Optional)
+### 4.2 Update pubsub.yaml (Required)
 ```yaml
 apiVersion: dapr.io/v1alpha1
 kind: Component
@@ -877,9 +885,9 @@ spec:
   version: v1
   metadata:
   - name: redisHost
-    value: "{redis.bindings.tcp.host}:{redis.bindings.tcp.port}"
+    value: "localhost:16379"
   - name: redisPassword
-    value: ""
+    value: "zxczxc123"
 scopes:
 - pizza-storefront
 - pizza-kitchen
@@ -1076,7 +1084,7 @@ dapr run -f dapr.yaml
 |---------|---------|
 | Aspire.Hosting.AppHost | 13.1.0 |
 | CommunityToolkit.Aspire.Hosting.Dapr | 13.0.0 |
-| Aspire.Hosting.Redis | 13.1.0 |
+| Aspire.Hosting.Valkey | 13.1.0 |
 | Microsoft.Extensions.Http.Resilience | 9.5.0 |
 | Microsoft.Extensions.ServiceDiscovery | 9.5.0 |
 | OpenTelemetry.Exporter.OpenTelemetryProtocol | 1.14.0 |
@@ -1087,3 +1095,61 @@ dapr run -f dapr.yaml
 | Dapr.AspNetCore | 1.16.1 (existing) |
 | Dapr.Client | 1.16.1 (existing) |
 | Dapr.Workflow | 1.16.1 (existing) |
+
+---
+
+## Potential Issues & Mitigations
+
+### 2. Dapr Component Files Compatibility
+**Issue:** The existing `resources/*.yaml` Dapr component files use `localhost:6379` for Redis, which won't work when Aspire manages the Redis container (dynamic port assignment).
+
+**Resolution:** Use Valkey (Redis-compatible) with a fixed port (16379) and password. Update the Dapr component files to use `localhost:16379` with the configured password. All services use `WaitFor(storage)` to ensure the storage container is ready before starting.
+
+### 3. Missing `using` Statement in AppHost
+**Issue:** The `AppHost/Program.cs` uses `ImmutableHashSet` without the required `using` statement.
+
+**Resolution:** Add `using System.Collections.Immutable;` or use the simpler API that doesn't require it.
+
+
+### 5. Missing Dapr Subscription Handling
+**Issue:** When using Aspire-managed Dapr, programmatic subscriptions are preferred over YAML-based subscriptions for better maintainability and type safety.
+
+**Resolution:** Use programmatic subscriptions instead of declarative YAML subscriptions:
+1. Add `app.MapSubscribeHandler()` in `PizzaOrder/Program.cs` to enable subscription endpoint discovery
+2. Add `[Topic("pizzapubsub", "orders")]` attribute to the `/order-sub` endpoint in `PizzaOrder/EndpointExtensions.cs`
+3. Add `using Dapr;` to import the `Topic` attribute
+4. Remove or comment out the `resources/subscription.yaml` file (no longer needed)
+
+The `[Topic]` attribute parameters are:
+- First parameter: pub/sub component name (`pizzapubsub`)
+- Second parameter: topic name (`orders`)
+
+### 6. Port Configuration
+**Issue:** The current services have hardcoded ports in `dapr.yaml`. Aspire dynamically assigns ports.
+
+**Mitigation:** Remove hardcoded port configurations from service `appsettings.json` files if present, or use Aspire's port configuration.
+
+### 7. Dapr Sidecar Startup Timing
+**Issue:** Services may start before Dapr sidecars are ready, causing initial connection failures.
+
+**Mitigation:** Add health checks and retry logic (already partially addressed by `Microsoft.Extensions.Http.Resilience`).
+
+### 8. Missing `using` for JsonOptions
+**Issue:** The Program.cs files use `JsonOptions` from `Microsoft.AspNetCore.Http.Json` but the Dapr client configuration needs `System.Text.Json.JsonSerializerOptions`.
+
+**Mitigation:** Ensure both using statements are present:
+```csharp
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
+```
+
+### 9. CloudEvents Middleware
+**Issue:** `PizzaOrder/Program.cs` uses `app.UseCloudEvents()` but this needs to be before endpoint mapping.
+
+**Mitigation:** Ensure correct middleware ordering:
+```csharp
+app.UseCloudEvents();
+app.MapSubscribeHandler();  // Add this for programmatic subscriptions
+app.MapDefaultEndpoints();
+app.MapServiceEndpoints();
+```

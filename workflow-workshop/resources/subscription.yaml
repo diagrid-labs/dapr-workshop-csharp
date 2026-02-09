@@ -4,7 +4,7 @@ metadata:
   name: pizza-subscription
 spec:
   topic: orders
-  route: /orders-sub
+  route: /order-sub
   pubsubname: pizzapubsub
 scopes: 
 - pizza-order
