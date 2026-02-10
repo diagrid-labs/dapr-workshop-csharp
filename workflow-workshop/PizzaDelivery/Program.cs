@@ -6,6 +6,7 @@ using PizzaDelivery.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddHealthChecks();
+builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IDeliveryService, DeliveryService>();
 
@@ -25,6 +26,12 @@ builder.Services.AddDaprClient((daprBuilder) =>
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.MapHealthChecks("/healthz");
 app.MapOpenApi();
