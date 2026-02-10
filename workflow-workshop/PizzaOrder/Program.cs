@@ -7,8 +7,8 @@ using Dapr.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddHealthChecks();
+builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IOrderStateService, OrderStateService>();
 
 builder.Services.Configure<JsonOptions>((options) =>
@@ -27,16 +27,12 @@ builder.Services.AddDaprClient((daprBuilder) =>
 });
 
 var app = builder.Build();
+
 app.UseCloudEvents();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-// Enable Dapr pub/sub subscription endpoint discovery
 app.MapSubscribeHandler();
+app.MapHealthChecks("/healthz");
+app.MapOpenApi();
 app.MapDefaultEndpoints();
 app.MapServiceEndpoints();
+
 app.Run();

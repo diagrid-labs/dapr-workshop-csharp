@@ -17,6 +17,9 @@ var resourcesPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "resourc
 var pizzaOrder = builder.AddProject<Projects.PizzaOrder>("pizza-order")
     .WithDaprSidecar(new DaprSidecarOptions
     {
+        PlacementHostAddress = "localhost:50005",
+        SchedulerHostAddress = "localhost:50006",
+        LogLevel = "debug",
         AppId = "pizza-order",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
@@ -25,6 +28,9 @@ pizzaOrder.WaitFor(storage);
 var pizzaStorefront = builder.AddProject<Projects.PizzaStorefront>("pizza-storefront")
     .WithDaprSidecar(new DaprSidecarOptions
     {
+        PlacementHostAddress = "localhost:50005",
+        SchedulerHostAddress = "localhost:50006",
+        LogLevel = "debug",
         AppId = "pizza-storefront",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
@@ -33,6 +39,9 @@ pizzaStorefront.WaitFor(storage);
 var pizzaKitchen = builder.AddProject<Projects.PizzaKitchen>("pizza-kitchen")
     .WithDaprSidecar(new DaprSidecarOptions
     {
+        PlacementHostAddress = "localhost:50005",
+        SchedulerHostAddress = "localhost:50006",
+        LogLevel = "debug",
         AppId = "pizza-kitchen",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
@@ -41,6 +50,9 @@ pizzaKitchen.WaitFor(storage);
 var pizzaDelivery = builder.AddProject<Projects.PizzaDelivery>("pizza-delivery")
     .WithDaprSidecar(new DaprSidecarOptions
     {
+        PlacementHostAddress = "localhost:50005",
+        SchedulerHostAddress = "localhost:50006",
+        LogLevel = "debug",
         AppId = "pizza-delivery",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
@@ -49,9 +61,22 @@ pizzaDelivery.WaitFor(storage);
 var pizzaWorkflow = builder.AddProject<Projects.PizzaWorkflow>("pizza-workflow")
     .WithDaprSidecar(new DaprSidecarOptions
     {
+        PlacementHostAddress = "localhost:50005",
+        SchedulerHostAddress = "localhost:50006",
+        LogLevel = "debug",
         AppId = "pizza-workflow",
         ResourcesPaths = ImmutableHashSet.Create(resourcesPath)
     });
 pizzaWorkflow.WaitFor(storage);
+
+// TODO
+// builder
+//     .AddContainer("diagrid-dashboard", "ghcr.io/diagridio/diagrid-dashboard:latest")
+//     .WithContainerName("catalyst-order-workflow-diagrid-dashboard")
+//     .WithBindMount(Path.Join(ExecutingPath, "Resources"), "/app/components")
+//     .WithEnvironment("COMPONENT_FILE", "/app/components/inventory-store-diagrid-dashboard.yaml")
+//     .WithEnvironment("APP_ID", "diagrid-dashboard")
+//     .WithHttpEndpoint(targetPort: 8080)
+//     .WithReference(cache);
 
 builder.Build().Run();

@@ -12,15 +12,15 @@ public class DeliveryService : IDeliveryService
 {
     private readonly ILogger<DeliveryService> _logger;
     private readonly DaprClient _daprClient;
-private const string PUBSUB_NAME = "pizzapubsub";
-private const string TOPIC_NAME = "orders";
+    private const string PUBSUB_NAME = "pizzapubsub";
+    private const string TOPIC_NAME = "orders";
 
-public DeliveryService(DaprClient daprClient, ILogger<DeliveryService> logger)
-{
-    _daprClient = daprClient;
-    _logger = logger;
-}
-    
+    public DeliveryService(DaprClient daprClient, ILogger<DeliveryService> logger)
+    {
+        _daprClient = daprClient;
+        _logger = logger;
+    }
+
     public async Task<Order> DeliverPizzaAsync(Order order)
     {
         var stages = new (string status, int duration)[]
@@ -39,7 +39,7 @@ public DeliveryService(DaprClient daprClient, ILogger<DeliveryService> logger)
             {
                 order.Status = status;
                 _logger.LogInformation("Order {OrderId} - {Status}", order.OrderId, status);
-                
+
                 await _daprClient.PublishEventAsync(PUBSUB_NAME, TOPIC_NAME, order);
                 await Task.Delay(TimeSpan.FromSeconds(duration));
             }

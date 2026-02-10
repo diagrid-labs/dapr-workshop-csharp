@@ -7,9 +7,8 @@ using PizzaWorkflow.Workflows;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddHealthChecks();
+builder.Services.AddOpenApi();
 
 builder.Services.Configure<JsonOptions>((options) =>
 {
@@ -40,12 +39,8 @@ builder.Services.AddDaprWorkflow(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+app.MapHealthChecks("/healthz");
+app.MapOpenApi();
 app.MapDefaultEndpoints();
 app.MapServiceEndpoints();
 app.Run();
